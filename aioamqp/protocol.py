@@ -178,7 +178,8 @@ class AmqpProtocol(asyncio.StreamReaderProtocol):
         yield from asyncio.wait_for(self.connection_closed.wait(), timeout=timeout, loop=self._loop)
         if self._heartbeat_worker is not None:
             try:
-                yield from asyncio.wait_for(self._heartbeat_worker, timeout=timeout, loop=self._loop)
+                self._heartbeat_stop()
+                # yield from asyncio.wait_for(self._heartbeat_worker, timeout=timeout, loop=self._loop)
             except asyncio.CancelledError:
                 pass
 
@@ -391,10 +392,13 @@ class AmqpProtocol(asyncio.StreamReaderProtocol):
         self.server_heartbeat = None
         if self._heartbeat_timer_recv is not None:
             self._heartbeat_timer_recv.cancel()
+            self._heartbeat_timer_recv = None
         if self._heartbeat_timer_send is not None:
             self._heartbeat_timer_send.cancel()
+            self._heartbeat_timer_send = None
         if self._heartbeat_worker is not None:
             self._heartbeat_worker.cancel()
+            self._heartbeat_worker = None
 
     @asyncio.coroutine
     def _heartbeat(self):
